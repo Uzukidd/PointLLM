@@ -11,4 +11,5 @@ modelnet40_data
 *.ipynb
 serving_workdirs
 
+*.npy
 RunsenXu

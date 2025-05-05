@@ -359,15 +359,15 @@ if __name__ == "__main__":
          default="RunsenXu/PointLLM_7B_v1.2")
 
 
-    parser.add_argument("--data_path", type=str, default="data/objaverse_data", required=False)
+    parser.add_argument("--data-path", type=str, default="data/objaverse_data", required=False)
     parser.add_argument("--pointnum", type=int, default=8192)
 
-    parser.add_argument("--log_file", type=str, default="serving_workdirs/serving_log.txt")
+    parser.add_argument("--log-file", type=str, default="serving_workdirs/serving_log.txt")
     parser.add_argument("--tmp_dir", type=str, default="serving_workdirs/tmp")
 
     # For gradio
     parser.add_argument("--port", type=int, default=7810)
-    parser.add_argument("--torch_dtype", type=str, default="float32", choices=["float32", "float16", "bfloat16"])
+    parser.add_argument("--torch-dtype", type=str, default="float32", choices=["float32", "float16", "bfloat16"])
 
     args = parser.parse_args()
 
