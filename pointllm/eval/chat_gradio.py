@@ -1,4 +1,5 @@
 import argparse
+import objaverse.utils
 from transformers import AutoTokenizer
 import torch
 import os
@@ -41,7 +42,7 @@ def init_model(args):
     logging.warning(f'Model name: {os.path.basename(model_name)}')
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = PointLLMLlamaForCausalLM.from_pretrained(model_name, low_cpu_mem_usage=False, use_cache=True).cuda()
+    model = PointLLMLlamaForCausalLM.from_pretrained(model_name, low_cpu_mem_usage=False, use_cache=True, torch_dtype=args.torch_dtype, device_map="auto")
     model.initialize_tokenizer_point_backbone_config_wo_embedding(tokenizer)
 
     model.eval()
@@ -91,7 +92,7 @@ def start_conversation(args, model, tokenizer, point_backbone_config, keywords, 
                 logging.warning(f"Object_id: {object_id_input}")
 
                 object_uids = [object_id_input]
-                objects = objaverse.load_objects(uids=object_uids)
+                # objects = objaverse.load_objects(uids=object_uids)
             print("%" * 80)
             logging.warning("%" * 80)
 
@@ -246,10 +247,12 @@ def start_conversation(args, model, tokenizer, point_backbone_config, keywords, 
                     print(f'{conv.roles[1]}: {outputs}\n')
                     logging.warning(f'{conv.roles[1]}: {outputs}\n')
                     answer_time += 1
-                    history[-1][1] = ""
-                    for character in outputs:
-                        history[-1][1] += character
-                        yield history
+                    history[-1][1] = outputs
+
+                    yield history
+                    # for character in outputs:
+                    #     history[-1][1] += character
+                    #     yield history
                 # error
                 except Exception as e:
                     print(f"[ERROR] {e}")
@@ -364,8 +367,17 @@ if __name__ == "__main__":
 
     # For gradio
     parser.add_argument("--port", type=int, default=7810)
+    parser.add_argument("--torch_dtype", type=str, default="float32", choices=["float32", "float16", "bfloat16"])
 
     args = parser.parse_args()
+
+    dtype_mapping = {
+        "float32": torch.float32,
+        "float16": torch.float16,
+        "bfloat16": torch.bfloat16,
+    }
+
+    args.torch_dtype = dtype_mapping[args.torch_dtype]
     
     # * make serving dirs
     os.makedirs(os.path.dirname(args.log_file), exist_ok=True)
