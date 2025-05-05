@@ -7,7 +7,7 @@ class pointbert_cls(nn.Module):
     def __init__(self, backbone: nn.Module, num_classes: int):
         super().__init__()
         self.backbone = backbone
-        self.emb_dim = 768  # default
+        self.emb_dim = 384  # default
 
         for param in self.backbone.parameters():
             param.requires_grad = False
@@ -17,7 +17,8 @@ class pointbert_cls(nn.Module):
 
     def forward(self, batch_X: torch.Tensor):
         embedding = self.backbone(batch_X)
-        logit = self.classifier(embedding)
+        cls_token = embedding[:, 0, :]
+        logit = self.classifier(cls_token)
 
         return logit
 
