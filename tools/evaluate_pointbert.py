@@ -49,6 +49,7 @@ def evaluate(model, dataloader):
         for data in tqdm(dataloader, desc="Evaluating"):
             points, labels = data
             points, labels = points.cuda(), labels.cuda().squeeze().long()
+            import pdb;pdb.set_trace()
             points = F.pad(points, (0, 3))
 
             # forward
@@ -58,6 +59,7 @@ def evaluate(model, dataloader):
             # update accuracy
             correct += (preds == labels).sum().item()
             total += labels.size(0)
+            print(torch.where(preds != labels))
 
     acc = correct / total
     print(f"Evaluation Accuracy: {acc * 100:.2f}%")
@@ -72,45 +74,18 @@ def show_model_parameters_info(model:nn.Module):
     print(f"Trainable parameters: {trainable_params:,}")
     print(f"Percentage of trainable parameters: {percent:.2f}%")
 
-def main(batch_size:int, epoch:int, learning_rate:float, config_path: str, ckpt_path: str, data_path: str):
+def main(batch_size:int, config_path: str, ckpt_path: str, data_path: str):
     train_dataset, test_dataset, train_dataLoader, test_dataLoader = load_dataset(data_path, batch_size)
     
     pointbert = load_pointbert(config_path,
-                               ckpt_path, use_color=True)
+                               None, use_color=True)
 
     pointbert = pointbert_cls(pointbert, train_dataset.classes.__len__()).cuda()
+    pointbert.load_state_dict(torch.load(args.ckpt_path))
     show_model_parameters_info(pointbert)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(pointbert.parameters(), lr=learning_rate)
 
-    pointbert.train()
-    for epoch in range(epoch):
-        total_loss = 0
-        correct = 0
-        total = 0
-        for points, label in tqdm(train_dataLoader, desc=f"Epoch {epoch+1}"):
-            points = points.cuda()
-            points = F.pad(points, (0, 3))
-            
-            label = label.cuda().squeeze().long()
-
-            optimizer.zero_grad()
-            output = pointbert(points)
-
-            loss = criterion(output, label)
-            loss.backward()
-            optimizer.step()
-
-            total_loss += loss.item()
-            preds = output.argmax(dim=-1)
-            correct += (preds == label).sum().item()
-            total += label.size(0)
-
-        acc = 100 * correct / total
-        print(f"[Epoch {epoch+1}] Total loss: {total_loss:.4f}, Accuracy: {acc:.2f}%")
-        if (epoch + 1) % 10 == 0:
-            torch.save(pointbert.state_dict(), f"pointbert_finetuned_{epoch + 1}.pth")
-        evaluate(pointbert, test_dataLoader)
+    pointbert.eval()
+    evaluate(pointbert, test_dataLoader)
     
 
 
@@ -118,16 +93,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run training or evaluation.")
     parser.add_argument("--batch-size", type=int, default=64,
                         help="Size of a single batch")
-    parser.add_argument("--epoch", type=int, default=30,
-                        help="Epoch")
-    parser.add_argument("--learning-rate", "-lr", type=float, default=1e-4,
-                        help="Learning rate")
     parser.add_argument("--config-path", type=str, default="pointllm/model/pointbert/PointTransformer_8192point_2layer.yaml",
                         help="Path to config file")
-    parser.add_argument("--ckpt-path", type=str, default="RunsenXu/PointLLM_13B_v1.2/pytorch_model-00006-of-00006.bin",
+    parser.add_argument("--ckpt-path", type=str, default="pointbert_finetuned_30.pth",
                         help="Path to model weights")
     parser.add_argument("--data-path", type=str, default="data/modelnet40_normal_resampled",
                         help="Path to dataset")
 
     args = parser.parse_args()
-    main(args.batch_size, args.epoch, args.learning_rate, args.config_path, args.ckpt_path, args.data_path)
+    main(args.batch_size, args.config_path, args.ckpt_path, args.data_path)

@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from pointllm.utils import *
 
 
@@ -23,7 +24,7 @@ class pointbert_cls(nn.Module):
         return logit
 
 
-def load_pointbert(config_path: str, ckpt_path: str, use_color: bool = False):
+def load_pointbert(config_path: str, ckpt_path: str = None, use_color: bool = False):
     from pointllm.model import PointTransformer
     point_bert_config = cfg_from_yaml_file(config_path)
 
@@ -53,12 +54,13 @@ def load_pointbert(config_path: str, ckpt_path: str, use_color: bool = False):
     print(
         f"Use max pool is {use_max_pool}. Number of point token is {point_backbone_config['point_token_len']}.")
 
-    pointbert_prefix = "model.point_backbone."
-    ckpt = torch.load(ckpt_path)
-    ckpt = {
-        k[len(pointbert_prefix):]: v for k, v in ckpt.items() if k.startswith(pointbert_prefix)
-    }
-    pointbert.load_state_dict(ckpt)
+    if ckpt_path is not None:
+        pointbert_prefix = "model.point_backbone."
+        ckpt = torch.load(ckpt_path)
+        ckpt = {
+            k[len(pointbert_prefix):]: v for k, v in ckpt.items() if k.startswith(pointbert_prefix)
+        }
+        pointbert.load_state_dict(ckpt)
 
     return pointbert
 

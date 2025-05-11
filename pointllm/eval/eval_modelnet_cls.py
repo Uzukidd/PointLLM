@@ -9,6 +9,7 @@ from pointllm.model import PointLLMLlamaForCausalLM
 from pointllm.data import ModelNet
 from tqdm import tqdm
 from pointllm.eval.evaluator import start_evaluation
+from pointllm.eval.localLLaMA_evaluator import localLLaMA_close_set_cls_evaluator
 from transformers import AutoTokenizer
 
 import os
@@ -28,7 +29,7 @@ def init_model(args):
     print(f'[INFO] Model name: {os.path.basename(model_name)}')
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = PointLLMLlamaForCausalLM.from_pretrained(model_name, low_cpu_mem_usage=False, use_cache=True, torch_dtype=torch.bfloat16).cuda()
+    model = PointLLMLlamaForCausalLM.from_pretrained(model_name, low_cpu_mem_usage=False, use_cache=True, torch_dtype=torch.bfloat16, device_map="auto")
     model.initialize_tokenizer_point_backbone_config_wo_embedding(tokenizer)
 
     conv_mode = "vicuna_v1_1"
@@ -168,12 +169,12 @@ def main(args):
     evaluated_output_file = args.output_file.replace(".json", f"_evaluated_{args.gpt_type}.json")
     # * start evaluation
     if args.start_eval:
-        start_evaluation(results, output_dir=args.output_dir, output_file=evaluated_output_file, eval_type="modelnet-close-set-classification", model_type=args.gpt_type, parallel=True, num_workers=20)
+        start_evaluation(results, output_dir=args.output_dir, output_file=evaluated_output_file, eval_type="localllama-modelnet-close-set-classification", model_type=args.gpt_type, parallel=False, num_workers=20)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", type=str, \
-        default="RunsenXu/PointLLM_7B_v1.2")
+        default="RunsenXu/PointLLM_13B_v1.2")
 
     # * dataset type
     parser.add_argument("--split", type=str, default="test", help="train or test.")
@@ -188,7 +189,7 @@ if __name__ == "__main__":
     # * evaluation setting
     parser.add_argument("--prompt_index", type=int, default=0)
     parser.add_argument("--start_eval", action="store_true", default=False)
-    parser.add_argument("--gpt_type", type=str, default="gpt-3.5-turbo-0613", choices=["gpt-3.5-turbo-0613", "gpt-3.5-turbo-1106", "gpt-4-0613", "gpt-4-1106-preview"], help="Type of the model used to evaluate.")
+    parser.add_argument("--gpt_type", type=str, default="Meta-Llama-3.1-8B-Instruct", choices=["Meta-Llama-3.1-8B-Instruct", "gpt-3.5-turbo-0613", "gpt-3.5-turbo-1106", "gpt-4-0613", "gpt-4-1106-preview"], help="Type of the model used to evaluate.")
 
     args = parser.parse_args()
 

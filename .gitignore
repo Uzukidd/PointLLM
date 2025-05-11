@@ -14,3 +14,4 @@ serving_workdirs
 *.npy
 *.pth
 RunsenXu
+llama

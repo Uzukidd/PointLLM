@@ -96,7 +96,7 @@ class ModelNetDataset(Dataset):
 
 
 if __name__ == "__main__":
-    data_path = "data/modelnet40_normal_resampled"
+    data_path = "data/modelnet40_data"
     TEST_DATASET = ModelNetDataset(
         root=data_path,
         npoint=8192,
