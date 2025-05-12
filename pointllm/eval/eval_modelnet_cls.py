@@ -6,7 +6,7 @@ from pointllm.conversation import conv_templates, SeparatorStyle
 from pointllm.utils import disable_torch_init
 from pointllm.model.utils import KeywordsStoppingCriteria
 from pointllm.model import PointLLMLlamaForCausalLM
-from pointllm.data import ModelNet
+from pointllm.data import ModelNet, CustonModelNet
 from tqdm import tqdm
 from pointllm.eval.evaluator import start_evaluation
 from pointllm.eval.localLLaMA_evaluator import localLLaMA_close_set_cls_evaluator
@@ -38,10 +38,15 @@ def init_model(args):
 
     return model, tokenizer, conv
 
-def load_dataset(config_path, split, subset_nums, use_color):
-    print(f"Loading {split} split of ModelNet datasets.")
-    dataset = ModelNet(config_path=config_path, split=split, subset_nums=subset_nums, use_color=use_color)
-    print("Done!")
+def load_dataset(dataset:str, data_path:str, config_path, split, subset_nums, use_color):
+    if dataset == "ModelNet40":
+        print(f"Loading {split} split of ModelNet datasets.")
+        dataset = ModelNet(config_path=config_path, split=split, subset_nums=subset_nums, use_color=use_color)
+        print("Done!")
+    elif dataset == "CustomDataset":
+        print(f"Loading {split} split of Custom datasets.")
+        dataset = CustonModelNet(data_path, use_adv = True, use_color = True)
+        print("Done!")
     return dataset
 
 def get_dataloader(dataset, batch_size, shuffle=False, num_workers=4):
@@ -140,13 +145,13 @@ def main(args):
     args.output_dir = os.path.join(args.model_name, "evaluation")
 
     # * output file 
-    args.output_file = f"ModelNet_classification_prompt{args.prompt_index}.json"
+    args.output_file = f"{args.dataset}_classification_prompt{args.prompt_index}.json"
     args.output_file_path = os.path.join(args.output_dir, args.output_file)
 
     # * First inferencing, then evaluate
     if not os.path.exists(args.output_file_path):
         # * need to generate results first
-        dataset = load_dataset(config_path=None, split=args.split, subset_nums=args.subset_nums, use_color=args.use_color) # * defalut config
+        dataset = load_dataset(args.dataset, args.data_path, config_path=None, split=args.split, subset_nums=args.subset_nums, use_color=args.use_color) # * defalut config
         dataloader = get_dataloader(dataset, args.batch_size, args.shuffle, args.num_workers)
     
         model, tokenizer, conv = init_model(args)
@@ -175,8 +180,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", type=str, \
         default="RunsenXu/PointLLM_13B_v1.2")
+    parser.add_argument("--dataset", type=str, \
+        default="ModelNet40",
+        choices=["ModelNet40", "CustomDataset"])
 
     # * dataset type
+    parser.add_argument("--data_path", type=str, default="test", help="path to the dataset")
     parser.add_argument("--split", type=str, default="test", help="train or test.")
     parser.add_argument("--use_color",  action="store_true", default=True)
 
