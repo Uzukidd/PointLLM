@@ -172,6 +172,8 @@ class localLLaMA_close_set_cls_evaluator():
         except ValueError:
             # print(cls_result)
             print(f"Error: unale to parse {gpt_response}.")
+            print(gpt_response_list)
+            print(cls_result)
             # import pdb;pdb.set_trace()
             cls_result = -1
 
@@ -220,7 +222,7 @@ class localLLaMA_close_set_cls_evaluator():
 
     def evaluate(self):
 
-        self.resume_processing()
+        # self.resume_processing()
 
         print('-' * 80)
         print("Starting single-thread evaluation...")

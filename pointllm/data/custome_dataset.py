@@ -114,34 +114,7 @@ class CustonModelNet(Dataset):
                     self.index.append(entry)
 
     def __len__(self):
-        import pdb;pdb.set_trace()
         return len(self.list_of_classnames["ori"])
-
-    def _get_item(self, index):
-        point_set, label = (
-            self.list_of_points[index][self.mode],
-            self.list_of_classnames[index][self.mode],
-        )
-
-        point_set[:, 0:3] = pc_normalize(point_set[:, 0:3])
-        if not self.use_normals:
-            point_set = point_set[:, 0:3]
-
-        if self.use_height:
-            self.gravity_dim = 1
-            height_array = (
-                point_set[:, self.gravity_dim : self.gravity_dim + 1]
-                - point_set[:, self.gravity_dim : self.gravity_dim + 1].min()
-            )
-            point_set = np.concatenate((point_set, height_array), axis=1)
-
-        point_set = (
-            np.concatenate((point_set, np.zeros_like(point_set)), axis=-1)
-            if self.use_color
-            else point_set
-        )
-
-        return point_set, label.item()  # * ndarray, int
 
     def pc_norm(self, pc):
         """pc: NxC, return NxC"""
